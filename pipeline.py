@@ -44,9 +44,9 @@ def run():
         f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
     )
 
-    file_pessoa     = os.getenv("FILE_PESSOA",     "data/db_pessoa_associado.csv")
-    file_agencia    = os.getenv("FILE_AGENCIA",    "data/db_entidade_agencia.csv")
-    file_transacoes = os.getenv("FILE_TRANSACOES", "data/db_cartoes_transacoes.csv")
+    file_pessoa     = os.getenv("FILE_PESSOA",     "data/db_pessoa.associado.csv")
+    file_agencia    = os.getenv("FILE_AGENCIA",    "data/db_entidade.agencia.csv")
+    file_transacoes = os.getenv("FILE_TRANSACOES", "data/db_cartoes.transacoes.csv")
 
     logger.info("=" * 55)
     logger.info("  PIPELINE ETL — Sistema Cooperativo")
