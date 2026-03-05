@@ -1,0 +1,75 @@
+---
+title: Modelo Dimensional - Sistema Cooperativo (Star Schema)
+---
+erDiagram
+
+    fato_transacao {
+        bigserial  sk_transacao       PK
+        int        sk_tempo           FK
+        int        sk_associado       FK
+        int        sk_agencia         FK
+        int        sk_cartao          FK
+        int        sk_modalidade      FK
+        int        sk_localidade      FK
+        timestamp  dat_hora_transacao
+        numeric    vlr_transacao
+        timestamp  dat_carga
+    }
+
+    dim_tempo {
+        serial   sk_tempo        PK
+        date     dat_completa    UK
+        smallint num_ano
+        smallint num_semestre
+        smallint num_trimestre
+        smallint num_mes
+        varchar  des_mes
+        smallint num_semana_ano
+        smallint num_dia_mes
+        smallint num_dia_semana
+        varchar  des_dia_semana
+        boolean  flg_fim_semana
+    }
+
+    dim_associado {
+        serial   sk_associado       PK
+        varchar  num_cpf_cnpj       UK
+        varchar  des_nome_associado
+        date     dat_associacao
+        smallint cod_faixa_renda
+        varchar  des_faixa_renda
+        timestamp dat_carga
+    }
+
+    dim_agencia {
+        serial   sk_agencia            PK
+        char     cod_cooperativa       UK
+        varchar  des_nome_cooperativa
+        smallint cod_agencia           UK
+        varchar  des_nome_agencia
+        timestamp dat_carga
+    }
+
+    dim_cartao {
+        serial    sk_cartao     PK
+        bigint    num_plastico  UK
+        integer   cod_conta
+        timestamp dat_carga
+    }
+
+    dim_modalidade {
+        serial  sk_modalidade  PK
+        varchar nom_modalidade UK
+    }
+
+    dim_localidade {
+        serial  sk_localidade              PK
+        varchar nom_cidade_estabelecimento UK
+    }
+
+    fato_transacao ||--o{ dim_tempo       : "ocorre em"
+    fato_transacao ||--o{ dim_associado   : "realizada por"
+    fato_transacao ||--o{ dim_agencia     : "pertence a"
+    fato_transacao ||--o{ dim_cartao      : "usa"
+    fato_transacao ||--o{ dim_modalidade  : "classificada como"
+    fato_transacao }o--o| dim_localidade  : "ocorre em"
