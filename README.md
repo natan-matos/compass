@@ -15,8 +15,8 @@ desafio_engenharia/
 ├── etl/
 │   ├── extract.py               # Leitura dos CSVs
 │   ├── transform.py             # Sanitização e tipagem
-│   ├── load.py                  # DDL + carga no Postgres
-│   └── pipeline.py              # Orquestrador (ponto de entrada)
+│   └── load.py                  # DDL + carga no Postgres
+├── pipeline.py                  # Orquestrador (ponto de entrada)
 ├── sql/
 │   ├── desafio2_flat_table.sql  # Tabela flat com indicadores
 │   └── desafio3_dimensional.sql # Modelo estrela (Star Schema)
@@ -24,56 +24,6 @@ desafio_engenharia/
     └── er_dimensional.mermaid   # Diagrama ER do modelo dimensional
 ```
 
----
-
-## Pré-requisitos
-
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
-- Python 3.11+
-
----
-
-## Como executar
-
-### 1. Configure o ambiente
-
-```bash
-cp .env.example .env
-# Edite .env se quiser alterar senhas
-```
-
-### 2. Suba o Postgres
-
-```bash
-docker compose up -d
-# Aguarda o healthcheck; Postgres estará pronto em ~10s
-```
-
-### 3. Instale as dependências Python
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Execute o pipeline ETL
-
-```bash
-python -m etl.pipeline
-```
-
-### 5. (Opcional) Acesse o pgAdmin
-
-Abra [http://localhost:8080](http://localhost:8080) com as credenciais do `.env`.
-Adicione um servidor apontando para `postgres:5432`.
-
-### Parar o banco
-
-```bash
-docker compose down          # mantém os dados
-docker compose down -v       # remove os dados também
-```
-
----
 
 ## Desafio 1 — Pipeline ETL
 
@@ -81,9 +31,9 @@ O pipeline segue o padrão **Extract → Transform → Load** com separação cl
 
 | Módulo | Responsabilidade |
 |--------|-----------------|
-| `extract.py` | Lê os CSVs brutos (detecção automática de separador, encoding `latin-1`) |
-| `transform.py` | Sanitiza strings, normaliza modalidades, converte datas e valores BR, aplica zero-padding |
-| `load.py` | Cria schema com PKs/FKs/índices; carga idempotente via `ON CONFLICT` |
+| `etl/extract.py` | Lê os CSVs brutos (detecção automática de separador, encoding `latin-1`) |
+| `etl/transform.py` | Sanitiza strings, normaliza modalidades, converte datas e valores BR, aplica zero-padding |
+| `etl/load.py` | Cria schema com PKs/FKs/índices; carga idempotente via `ON CONFLICT` |
 | `pipeline.py` | Orquestra os 3 módulos, configura logging, lê variáveis de ambiente |
 
 **Premissas assumidas:**
@@ -119,7 +69,7 @@ Star Schema com granularidade de **1 linha por transação de cartão**.
                  │
 dim_localidade ──┤
                  │
-dim_modalidade ──┼── fato_transacao ──── dim_associado
+dim_modalidade ──┼── fct_transacoes ──── dim_associado
                  │
   dim_cartao ────┤
                  │
@@ -131,3 +81,62 @@ dim_modalidade ──┼── fato_transacao ──── dim_associado
 - SCD Tipo 1 — fonte não contém histórico de alterações cadastrais
 - `dat_hora_transacao` como atributo degenerado na fato (cardinalidade muito alta para virar dimensão)
 - `dim_faixa_renda` desnormalizada dentro de `dim_associado` para simplificar queries analíticas
+
+---
+
+## Diagrama ER
+
+O diagrama completo do modelo dimensional está em `diagrama/er_dimensional.mermaid`.
+
+Para visualizar, acesse [mermaid.live](https://mermaid.live), cole o conteúdo do arquivo e o diagrama será renderizado interativamente.
+
+---
+
+## Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
+- Python 3.11+
+
+---
+
+## Como executar
+
+### 1. Configure o ambiente
+
+```bash
+cp .env.example .env
+# Edite .env se quiser alterar senhas
+```
+
+### 2. Suba o Postgres
+
+```bash
+docker compose up -d
+# Aguarda o healthcheck; Postgres estará pronto em ~10s
+```
+
+### 3. Instale as dependências Python
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Execute o pipeline ETL
+
+```bash
+python pipeline.py
+```
+
+### 5. (Opcional) Acesse o pgAdmin
+
+Abra [http://localhost:8080](http://localhost:8080) com as credenciais do `.env`.
+Adicione um servidor apontando para `postgres:5432`.
+
+### Parar o banco
+
+```bash
+docker compose down          # mantém os dados
+docker compose down -v       # remove os dados também
+```
+
+---

@@ -1,24 +1,79 @@
 ---
-title: Modelo Dimensional - Sistema Cooperativo (Star Schema)
+title: Modelo de Dados - Sistema Cooperativo
 ---
 erDiagram
 
-    fato_transacao {
-        bigserial  sk_transacao       PK
-        int        sk_tempo           FK
-        int        sk_associado       FK
-        int        sk_agencia         FK
-        int        sk_cartao          FK
-        int        sk_modalidade      FK
-        int        sk_localidade      FK
-        timestamp  dat_hora_transacao
-        numeric    vlr_transacao
-        timestamp  dat_carga
+    %% ── Camada Staging ──────────────────────────────────────────────────────
+    stg_associados {
+        varchar  num_cpf_cnpj       PK
+        varchar  des_nome_associado
+        date     dat_associacao
+        smallint cod_faixa_renda    FK
+    }
+
+    stg_agencias {
+        char     cod_cooperativa    PK
+        smallint cod_agencia        PK
+        varchar  des_nome_cooperativa
+        varchar  des_nome_agencia
+    }
+
+    stg_transacoes {
+        bigserial id_transacao      PK
+        varchar   num_cpf_cnpj      FK
+        char      cod_cooperativa   FK
+        smallint  cod_agencia       FK
+        integer   cod_conta
+        bigint    num_plastico
+        timestamp dat_transacao
+        numeric   vlr_transacao
+        varchar   nom_modalidade
+        varchar   nom_cidade_estabelecimento
+    }
+
+    dim_faixa_renda {
+        smallint cod_faixa_renda    PK
+        varchar  des_faixa_renda
+    }
+
+    %% ── Camada Flat ─────────────────────────────────────────────────────────
+    flat_associados {
+        varchar  num_cpf_cnpj               PK
+        varchar  des_nome_associado
+        date     dat_associacao
+        smallint cod_faixa_renda
+        varchar  des_faixa_renda
+        char     cod_cooperativa_principal
+        smallint cod_agencia_principal
+        varchar  des_agencia_principal
+        boolean  flg_associado_frequente
+        boolean  flg_ativo_credito
+        boolean  flg_ativo_debito
+        integer  qtd_transacoes_3m
+        numeric  vlr_total_3m
+        numeric  vlr_credito_3m
+        numeric  vlr_debito_3m
+        timestamp dat_ultima_transacao
+        timestamp dat_geracao_flat
+    }
+
+    %% ── Camada Dimensional ──────────────────────────────────────────────────
+    fct_transacoes {
+        bigserial sk_transacao       PK
+        int       sk_tempo           FK
+        int       sk_associado       FK
+        int       sk_agencia         FK
+        int       sk_cartao          FK
+        int       sk_modalidade      FK
+        int       sk_localidade      FK
+        timestamp dat_hora_transacao
+        numeric   vlr_transacao
+        timestamp dat_carga
     }
 
     dim_tempo {
-        serial   sk_tempo        PK
-        date     dat_completa    UK
+        serial   sk_tempo         PK
+        date     dat_completa     UK
         smallint num_ano
         smallint num_semestre
         smallint num_trimestre
@@ -32,21 +87,21 @@ erDiagram
     }
 
     dim_associado {
-        serial   sk_associado       PK
-        varchar  num_cpf_cnpj       UK
-        varchar  des_nome_associado
-        date     dat_associacao
-        smallint cod_faixa_renda
-        varchar  des_faixa_renda
+        serial    sk_associado       PK
+        varchar   num_cpf_cnpj       UK
+        varchar   des_nome_associado
+        date      dat_associacao
+        smallint  cod_faixa_renda
+        varchar   des_faixa_renda
         timestamp dat_carga
     }
 
     dim_agencia {
-        serial   sk_agencia            PK
-        char     cod_cooperativa       UK
-        varchar  des_nome_cooperativa
-        smallint cod_agencia           UK
-        varchar  des_nome_agencia
+        serial    sk_agencia          PK
+        char      cod_cooperativa     UK
+        smallint  cod_agencia         UK
+        varchar   des_nome_cooperativa
+        varchar   des_nome_agencia
         timestamp dat_carga
     }
 
@@ -67,9 +122,18 @@ erDiagram
         varchar nom_cidade_estabelecimento UK
     }
 
-    fato_transacao ||--o{ dim_tempo       : "ocorre em"
-    fato_transacao ||--o{ dim_associado   : "realizada por"
-    fato_transacao ||--o{ dim_agencia     : "pertence a"
-    fato_transacao ||--o{ dim_cartao      : "usa"
-    fato_transacao ||--o{ dim_modalidade  : "classificada como"
-    fato_transacao }o--o| dim_localidade  : "ocorre em"
+    %% ── Relacionamentos Staging ──────────────────────────────────────────────
+    stg_associados  ||--o{ stg_transacoes  : "realiza"
+    stg_agencias    ||--o{ stg_transacoes  : "processa"
+    dim_faixa_renda ||--o{ stg_associados  : "classifica"
+
+    %% ── Relacionamentos Flat ─────────────────────────────────────────────────
+    stg_associados ||--|| flat_associados  : "origina"
+
+    %% ── Relacionamentos Dimensionais (dimensão 1 → muitas fatos) ─────────────
+    dim_tempo      ||--o{ fct_transacoes  : "ocorre em"
+    dim_associado  ||--o{ fct_transacoes  : "realizada por"
+    dim_agencia    ||--o{ fct_transacoes  : "pertence a"
+    dim_cartao     ||--o{ fct_transacoes  : "usa"
+    dim_modalidade ||--o{ fct_transacoes  : "classificada como"
+    dim_localidade |o--o{ fct_transacoes  : "ocorre em"
